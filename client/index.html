@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+      *{
+        font-family: 'Open Sans', sans-serif;
+      }
+      #wrapper{
+        position: relative;
+        width: 1336px;
+        height: 768px;
+        background-color: cornflowerblue;
+      }
+      .circle{
+        position: absolute;
+        border-radius: 50%;
+      }
+	</style>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
+    <script type="text/babel" >
+      "use strict";
+      let socket;
+
+      let userId;
+      //fired when app client starts, initializes socket logic
+      const init = () => {
+        
+        //assign event handlers
+        setupSocket();
+        
+        //event in which the player attempts to join the game session
+        document.getElementById("JoinButton").addEventListener('click', () => {
+          let time = new Date().getTime();
+          socket.emit('requestJoinGame', userId);
+        });
+        
+        
+        let time = new Date().getTime();
+        socket.emit('join', time);
+        
+        //begin loop
+        loop();
+      }
+
+      //when socket is connected, adds event handlers
+      const setupSocket = () => {
+        //establish socket connection
+        socket = io.connect();
+        
+        // sync local set with server and set userId
+        socket.on('serveUserId', (data) => {
+          userId = data;
+          socket.userId = userId;
+        });
+      }
+      
+      //fires once a frame, draws stuff
+      const loop = () => {
+        window.requestAnimationFrame(loop.bind(this));
+      };
+      
+      window.onload = init;
+    </script>
+</head>
+<body id="body">
+  <div id='wrapper'>
+  </div></body>
+</html>
