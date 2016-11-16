@@ -5,10 +5,17 @@
       *{
         font-family: 'Open Sans', sans-serif;
       }
+      body{
+        background-color: gray;
+      }
+      canvas{
+        margin: 0;
+        padding: 0;
+      }
       #wrapper{
-        position: relative;
-        width: 1336px;
-        height: 768px;
+        width: 1280px;
+        height: 720px;
+        margin: 0 auto;
         background-color: cornflowerblue;
       }
       .circle{
@@ -24,18 +31,23 @@
       let socket;
 
       let userId;
+      let canvas;
+      let ctx;
+
+      let pseudoConsole;
+      
       //fired when app client starts, initializes socket logic
       const init = () => {
+        //setup local canvas variables
+        canvas = document.querySelector('canvas');
+        ctx = canvas.getContext('2d');
+        canvas.width = 1280;
+        canvas.height = 720;
+        
+        pseudoConsole = "loaded";
         
         //assign event handlers
         setupSocket();
-        
-        //event in which the player attempts to join the game session
-        document.getElementById("JoinButton").addEventListener('click', () => {
-          let time = new Date().getTime();
-          socket.emit('requestJoinGame', userId);
-        });
-        
         
         let time = new Date().getTime();
         socket.emit('join', time);
@@ -54,11 +66,51 @@
           userId = data;
           socket.userId = userId;
         });
+        socket.on('serveAnotherJoined', (data) => {
+          pseudoConsole = data + " has joined the game";
+        });
+        socket.on('serveAnotherLeaving', (data) => {
+          pseudoConsole = data + " has left the game";
+        });
       }
       
       //fires once a frame, draws stuff
       const loop = () => {
         window.requestAnimationFrame(loop.bind(this));
+        
+        //clear canvas
+        ctx.save();
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+        
+        ctx.save();
+        ctx.fillStyle = 'white';
+        ctx.textBaseline="bottom"; 
+        ctx.font="30px Arial";
+        ctx.fillText(pseudoConsole,100,700);
+        
+        ctx.textBaseline="top";
+        ctx.fillText("Score: ",50,50);
+        ctx.restore();
+        
+        /*
+        let keys = Object.keys(targets);
+        //for loop for every shape
+        for(let i = 0; i < keys.length; i++){
+          const piece = targets[keys[i]];
+          
+          //update values of the piece
+          piece.diam += .4;
+          if(piece.diam > 100){
+            piece.diam = 100;
+          }
+          piece.style.width = `${piece.diam}px`;
+          piece.style.height = `${piece.diam}px`;
+          piece.style.top = `${piece.y - piece.diam/2}px`;
+          piece.style.left = `${piece.x - piece.diam/2}px`;
+          piece.style.background = piece.team;
+        }*/
       };
       
       window.onload = init;
@@ -66,5 +118,9 @@
 </head>
 <body id="body">
   <div id='wrapper'>
-  </div></body>
+    <canvas>
+      This browser does not support modern web functionality
+    </canvas>
+  </div>
+</body>
 </html>

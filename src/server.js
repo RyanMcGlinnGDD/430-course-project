@@ -22,6 +22,7 @@ console.log(`listening on 127.0.0.1: ${port}`);
 const io = socketio(app);
 
 const players = {};
+let gameState = 0;
 
 // join logic, adds users to room1
 const onJoined = (sock) => {
@@ -35,19 +36,31 @@ const onJoined = (sock) => {
     let userId;
     let flag = true;
     while (flag) {
+      //pick a random number 1-10,000
       userId = `user${Math.floor(Math.random() * 10000) + 1}`;
+      //if the index is nonexistant, break the loop
       if (players[userId] !== null) {
         flag = false;
       }
     }
     // give a value denoting participation status
-    players[userId] = { };
+    players[userId] = 0;
 
     socket.emit('serveUserId', userId);
+    socket.broadcast.to('room1').emit('serveAnotherJoined', userId);
     // save userId to socket so disconnect can be handled
     socket.userId = userId;
   });
 };
+
+// handles requests
+const onTargetRequest = (sock) => {
+  const socket = sock;
+  socket.on('requestDiagnostic', (data) => {
+    console.log(`${data}`);
+  });
+};
+
 
 // disconnect logic, removes users from room1
 const onDisconnect = (sock) => {
@@ -56,6 +69,8 @@ const onDisconnect = (sock) => {
   socket.on('disconnect', () => {
     console.log(`${socket.userId} disconnecting from server...`);
 
+    socket.broadcast.to('room1').emit('serveAnotherLeaving', socket.userId);
+    
     delete players[socket.userId];
 
     // leave the room
@@ -69,6 +84,7 @@ io.sockets.on('connection', (socket) => {
   console.log('connecting');
 
   onJoined(socket);
+  onTargetRequest(socket);
   onDisconnect(socket);
 });
 
