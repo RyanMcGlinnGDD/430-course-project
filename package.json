@@ -1,24 +1,39 @@
 {
-  "name": "syncing-data-02",
+  "name": "Elektronn",
   "version": "1.0.0",
   "engines": {
-    "node": "6.5.0"
+    "node": "6.5.0",
+    "npm": "3.10.3"
   },
-  "main": "index.js",
+  "description": "Course project for 430 - Rich Media II",
+  "main": "./src/app.js",
   "scripts": {
-    "start": "node ./src/server.js",
+    "start": "node ./src/app.js",
     "pretest": "eslint ./src --fix",
-    "test": "echo \"Tests complete\""
+    "test": "echo \"Tests Complete\""
   },
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "Node"
+  ],
+  "author": "Ryan",
+  "license": "Apache 2.0",
   "dependencies": {
+    "body-parser": "^1.15.0",
+    "compression": "^1.6.1",
+    "connect-redis": "^3.0.2",
+    "cookie-parser": "^1.3.3",
+    "csurf": "^1.8.3",
+    "express": "^4.13.4",
+    "express-handlebars": "^3.0.0",
+    "express-session": "^1.13.0",
+    "helmet": "^1.3.0",
+    "serve-favicon": "^2.3.0",
+    "underscore": "^1.8.3",
     "socket.io": "^1.4.8"
   },
   "devDependencies": {
-    "eslint": "^3.4.0",
-    "eslint-config-airbnb": "^11.0.0",
-    "eslint-plugin-import": "^1.14.0"
+    "eslint": "^3.8.1",
+    "eslint-config-airbnb": "^12.0.0",
+    "eslint-plugin-import": "^2.0.1"
   }
 }
