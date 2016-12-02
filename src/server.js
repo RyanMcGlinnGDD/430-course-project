@@ -68,7 +68,7 @@ const onJoined = (sock) => {
 
     // serve the userObject to the client
     socket.emit('serveInitialState', { static: usersStatic, dynamic: usersDynamic, id: socket.id });
-    io.sockets.emit('serveNewUser', { id: socket.id, static: usersStatic[socket.id], dynamic: usersDynamic[socket.id]});
+    io.sockets.emit('serveNewUser', { id: socket.id, static: usersStatic[socket.id], dynamic: usersDynamic[socket.id] });
   });
 };
 
@@ -79,10 +79,11 @@ const onRequest = (sock) => {
   socket.on('requestStatus', (data) => {
     console.log(data);
   });
-  //updates the locally stored client data and serves the entire array back
+  // updates the locally stored client data and serves the entire array back
   socket.on('requestUpdateClientData', (data) => {
     usersDynamic[socket.id] = data.clientData;
-    //!!!will probably need to ensure that this emission syncs properly with new users joining, otherwise use a client based function that neatly integrates data
+    //! !!will probably need to ensure that this emission syncs properly with new users
+    // joining, otherwise use a client based function that neatly integrates data
     io.sockets.emit('serveUpdateClientData', usersDynamic);
   });
 };
@@ -126,7 +127,8 @@ const onDisconnect = (sock) => {
         }
       }
 
-      // nullify the users !!!from what I can undertstand, delete is bad but the internet says this is the optimal way to delete keys
+      // nullify the users !!!from what I can undertstand, delete is bad
+      // but the internet says this is the optimal way to delete keys
       delete usersStatic[socket.id];
       delete usersDynamic[socket.id];
 
