@@ -254,7 +254,7 @@ const handleCollisions = () => {
           if((scores[keys[i]] + 1) > highScore){
             highScore = (scores[keys[i]] + 1);
           }
-          
+          console.log("a collision was detected");
           // request score update
           socket.emit('requestUpdateScore', { id: keys[i], score: (scores[keys[i]] + 1), highScore: highScore});
         }
