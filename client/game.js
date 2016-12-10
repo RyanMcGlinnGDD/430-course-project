@@ -9,6 +9,8 @@ let dataStatic;
 let dataDynamic;
 let lastUpdate;
 let defeatedBy;
+let scores;
+let highScore;
 
 //input variables
 let keyW;
@@ -44,8 +46,7 @@ const init = () => {
     if(document.getElementById("name").value.length > 2){
       //hide element and fire signin event
       document.getElementById("signin").style.display = "none";
-      //!!!position will ideally eventually be random
-      socket.emit('join', { time: new Date().getTime(), name: document.getElementById("name").value.toUpperCase(), position: {x: rander(-800, 800), y: rander(-800, 800)} });
+      socket.emit('join', { time: new Date().getTime(), name: `${document.getElementById("name").value.toUpperCase()}`, position: {x: rander(-800, 800), y: rander(-800, 800)} });
     }
   });
   
@@ -63,6 +64,8 @@ const setupSocket = () => {
     dataStatic = data.static;
     dataDynamic = data.dynamic;
     lastUpdate = data.time;
+    scores = data.scores;
+    highScore = data.highScore;
     console.log(`this client is ${dataStatic[id].name} ${id}`);
   });
   // sets one of the users to be the new host
@@ -128,12 +131,18 @@ const setupSocket = () => {
       dataDynamic[data.id] = data.dynamic;
       lastUpdate = data.time;
       console.log(`${dataStatic[data.id].name} has joined`);
+      scores = data.scores;
+      console.dir(data.scores);
     }
     
   });
   // notification that specified user is dead
   socket.on('deleteUser', (data) => {
     
+  });
+  socket.on('serveUpdateScore', (data) => {
+    highScore = data.highScore;
+    scores = data.scores;
   });
 }
 
@@ -210,7 +219,7 @@ const loop = () => {
       ctx.save();
       ctx.font = "30px Arial";
       ctx.fillText(`You were defeated` , 400, 400);
-      ctx.fillText(`You scored ${dataDynamic[id].score} points` , 400, 440);
+      ctx.fillText(`You scored ${scores[id]} points` , 400, 440);
       ctx.fillText(`Press W to respawn` , 400, 480);
       
       //reset and return to life
@@ -218,7 +227,9 @@ const loop = () => {
         dataDynamic[id].alive = true;
         //new location
         dataDynamic[id].position = {x: rander(-800, 800), y: rander(-800, 800)};
-        data.dynamic[id].score = 0;
+        // push score update
+        socket.emit('requestUpdateScore', { id: id, score: 0, highScore: highScore});
+        
       }
       ctx.restore();
     }
@@ -239,6 +250,13 @@ const handleCollisions = () => {
         if(keys[i] != id && (a*a + b*b) < (dataDynamic[keys[i]].charge + 12)*(dataDynamic[keys[i]].charge + 12)){
           //change alive status
           dataDynamic[id].alive = false;
+          //highScore calculations
+          if((scores[keys[i]] + 1) > highScore){
+            highScore = (scores[keys[i]] + 1);
+          }
+          
+          // request score update
+          socket.emit('requestUpdateScore', { id: keys[i], score: (scores[keys[i]] + 1), highScore: highScore});
         }
       }
     }
@@ -344,7 +362,6 @@ const draw = () => {
       if(dataDynamic[id].alive){
         painter.ship(ctx, 800, 360, dataDynamic[id].angle, "blue");
       } else{
-        console.log("this is a thing");
         painter.ship(ctx, 800, 360, dataDynamic[id].angle, "#BFBFBF");
       }
     } else{ //else draw others in reference to self position
@@ -352,11 +369,11 @@ const draw = () => {
         ctx.save();
         if(dataDynamic[keys[i]].alive){
           painter.ship(ctx, (800 + dataDynamic[keys[i]].position.x - dataDynamic[id].position.x), (360 + dataDynamic[keys[i]].position.y - dataDynamic[id].position.y), dataDynamic[keys[i]].angle, "red");
-        } else{
-          painter.ship(ctx, (800 + dataDynamic[keys[i]].position.x - dataDynamic[id].position.x), (360 + dataDynamic[keys[i]].position.y - dataDynamic[id].position.y), dataDynamic[keys[i]].angle, "#BFBFBF");
           ctx.font = "20px Arial";
           ctx.fillText(`${dataStatic[keys[i]].name}` , (800 + dataDynamic[keys[i]].position.x - dataDynamic[id].position.x) - ctx.measureText(dataStatic[keys[i]].name).width/2, (375 + dataDynamic[keys[i]].position.y - dataDynamic[id].position.y) + 25);
           ctx.restore();
+        } else{
+          painter.ship(ctx, (800 + dataDynamic[keys[i]].position.x - dataDynamic[id].position.x), (360 + dataDynamic[keys[i]].position.y - dataDynamic[id].position.y), dataDynamic[keys[i]].angle, "#BFBFBF");
         }
       }
     }
@@ -381,8 +398,14 @@ const draw = () => {
   
   //scoreboard
   painter.rect(ctx, 0, 0, 320, 720, "gray");
-  for(let i = 0; i < 10; i++){  }
-  
+  ctx.save();
+  ctx.font = "30px Arial";
+  if(dataDynamic[id] !== undefined){
+    ctx.fillText(`${dataStatic[id].name}`, 10, 40);
+    ctx.fillText(`Score: ${scores[id]}`, 10, 80);
+    ctx.fillText(`High Score: ${highScore}`, 10, 120);
+  }
+  ctx.restore();
   
   //minimap
   painter.rect(ctx, 10, 410, 300, 300, "lightgray");
@@ -400,16 +423,6 @@ const draw = () => {
       }
     }
   }
-  
-
-  ctx.save();
-  ctx.font = "20px Arial";
-  for (let i = 0; i < keys.length; i++) {
-    ctx.fillText(`${dataStatic[keys[i]].name}: ${dataDynamic[keys[i]].alive}`,10, 60*i + 20);
-    //ctx.fillText(`Position: ${dataDynamic[keys[i]].position.x}, ${dataDynamic[keys[i]].position.y}`,10, 60*i + 40);
-    //ctx.fillText(`Bullet: ${dataDynamic[keys[i]].bulletPos.x}, ${dataDynamic[keys[i]].bulletPos.y}`,10, 60*i + 60);
-  }
-  ctx.restore();
 };
 
 const updateServer = () => {

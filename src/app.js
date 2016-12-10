@@ -5,12 +5,22 @@ const compression = require('compression');
 const favicon = require('serve-favicon');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
 const expressHandlebars = require('express-handlebars');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
 const url = require('url');
 const csrf = require('csurf');
 const websocketServer = require('./server');
+
+const dbURL = process.env.MONGODB_URI || 'mongodb://heroku_83k4fgn4:1h69mgma5ov2o51oe20f2bvbj7@ds119618.mlab.com:19618/heroku_83k4fgn4';
+
+mongoose.connect(dbURL, (err) => {
+  if (err) {
+    console.log('Could not connect to database');
+    throw err;
+  }
+});
 
 let redisURL = {
   hostname: 'localhost',
