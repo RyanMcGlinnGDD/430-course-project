@@ -8,13 +8,16 @@ const usersStatic = {};
 const usersDynamic = {};
 // the user that currently is leading physics requests
 let host;
+//scorekeep
+let scores = {};
+let highScore;
 
 // handles join requests
 const onJoined = (sock) => {
   const socket = sock;
   // set to undefined to flush data
-  socket.id = undefined;
-  //! !!prevent multiple instances of the same name
+  socket.userId = undefined;
+  // !!!prevent multiple instances of the same name
 
   // stuff that happens when a user joins
   socket.on('join', (data) => {
@@ -41,16 +44,18 @@ const onJoined = (sock) => {
         };
         userObjectDynamic = {
           position: data.position,
+          alive: true,
           angle: 0,
           charge: 0,
-          health: 100,
+          bulletPos: {x: 0, y: 0},
+          bulletAng: {x: 0, y: 0},
           score: 0,
         };
         // save userObjects to arrays
         usersStatic[userID] = userObjectStatic;
         usersDynamic[userID] = userObjectDynamic;
         // set this socket's id property to the id so it can be properly deleted on disconnect
-        socket.id = userID;
+        socket.userId = userID;
         // break the loop
         flagID = false;
       }
@@ -64,11 +69,10 @@ const onJoined = (sock) => {
     }
 
     // notify the console that the user has joined
-    console.log(`${usersStatic[socket.id].name} (${socket.id}) has joined`);
-
+    console.log(`${usersStatic[socket.userId].name} (${socket.userId}) has joined`);
     // serve the userObject to the client
-    socket.emit('serveInitialState', { static: usersStatic, dynamic: usersDynamic, id: socket.id });
-    io.sockets.emit('serveNewUser', { id: socket.id, static: usersStatic[socket.id], dynamic: usersDynamic[socket.id] });
+    socket.emit('serveInitialState', { static: usersStatic, dynamic: usersDynamic, id: socket.userId, time: data.time });
+    io.sockets.in('room1').emit('serveNewUser', { id: socket.userId, static: usersStatic[socket.userId], dynamic: usersDynamic[socket.userId], time: data.time });
   });
 };
 
@@ -81,10 +85,12 @@ const onRequest = (sock) => {
   });
   // updates the locally stored client data and serves the entire array back
   socket.on('requestUpdateClientData', (data) => {
-    usersDynamic[socket.id] = data.clientData;
-    //! !!will probably need to ensure that this emission syncs properly with new users
+    //integrate client data
+    usersDynamic[socket.userId] = data.clientData;
+    
+    // !!!will probably need to ensure that this emission syncs properly with new users
     // joining, otherwise use a client based function that neatly integrates data
-    io.sockets.emit('serveUpdateClientData', usersDynamic);
+    io.sockets.in('room1').emit('serveUpdateClientData', { dynamic: usersDynamic, time: data.time, });
   });
 };
 
@@ -94,31 +100,31 @@ const onDisconnect = (sock) => {
   // stuff that happens when a user disconnects
   socket.on('disconnect', () => {
     // ensure that the disconnector actually joined a room
-    if (socket.id !== undefined) {
+    if (socket.userId !== undefined) {
       // notify the console that the user is disconnecting
-      console.log(`${usersStatic[socket.id].name} (${socket.id}) has disconnected`);
+      console.log(`${usersStatic[socket.userId].name} (${socket.userId}) has disconnected`);
 
       // assign new host if disconnected user was hosting
-      if (usersStatic[socket.id].host === true) {
-        console.log(`${usersStatic[socket.id].name} (${socket.id}) was the active host; migration in progress`);
+      if (usersStatic[socket.userId].host === true) {
+        console.log(`${usersStatic[socket.userId].name} (${socket.userId}) was the active host; migration in progress`);
 
         // get user keys
         const keys = Object.keys(usersStatic);
         // if keys indicate more than a single user, make the first other user host
         if (keys.length > 1) {
           // ensure that the first index is not the disconnecting user and assign the new host
-          if (keys[0] == socket.id) {
+          if (keys[0] === `${socket.userId}`) {
             host = usersStatic[keys[1]];
             host.host = true;
           } else {
             host = usersStatic[keys[0]];
             host.host = true;
           }
-          //! !! what if the old and new host disconnect at the same time?
+          // !!! what if the old and new host disconnect at the same time?
           // give the hosting to the first available user
           console.log(`hosting is being passed to ${host.name} (${host.id})`);
-          //! !! same issue here with room specific emissions not working
-          io.sockets.emit('serveAssignNewHost', { id: host.id });
+          // !!! same issue here with room specific emissions not working
+          io.sockets.in('room1').emit('serveAssignNewHost', { id: host.id });
 
           // console.log(io.sockets);
         } else { // otherwise there is no one left, so perform reset operation
@@ -129,8 +135,9 @@ const onDisconnect = (sock) => {
 
       // nullify the users !!!from what I can undertstand, delete is bad
       // but the internet says this is the optimal way to delete keys
-      delete usersStatic[socket.id];
-      delete usersDynamic[socket.id];
+      io.sockets.in('room1').emit('serveDeleteUser', { id: socket.userId });
+      delete usersStatic[socket.userId];
+      delete usersDynamic[socket.userId];
 
       // leave the room
       socket.leave('room1');
