@@ -400,6 +400,7 @@ const draw = () => {
   painter.rect(ctx, 0, 0, 320, 720, "gray");
   ctx.save();
   ctx.font = "30px Arial";
+  ctx.fillStyle = "white";
   if(dataDynamic[id] !== undefined){
     ctx.fillText(`${dataStatic[id].name}`, 10, 40);
     ctx.fillText(`Score: ${scores[id]}`, 10, 80);

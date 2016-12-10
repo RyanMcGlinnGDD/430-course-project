@@ -31,6 +31,16 @@ canvas {
   left: 440px;
 }
 
+#controls {
+  position: absolute;
+  left: 10px;
+  bottom: 310px;
+  pointer-events: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
 #signin p {
   font-size: 20pt;
   margin-left: 10px;
